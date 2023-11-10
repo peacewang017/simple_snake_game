@@ -10,8 +10,8 @@ typedef struct{
 
 #define snake_speed 1
 #define max_snake_length 30
-#define max_height 24
-#define max_width 32
+#define max_height 12
+#define max_width 16
 #define num_apple 2
 #define num_snake 1
 #define num_air 0
@@ -27,10 +27,17 @@ typedef struct{
 #define apple_init_y 3
 #define apple_move_x 7
 #define apple_move_y 8
+#define delay 1000
+
+// #define move_direction (*(volatile int*)(0x000)) //直接将方向值映射到内存中的0x000位置
+
+// //board以0x004为起点 , board[1]-board[192] , *(board[1])=0x008 , *(board[trans(x,y)])=0x004+((x-1)*16+y)*4
+// #define board ((volatile int*)(0x004))
 
 //用于蛇数据结构
 #define sub1_mod(x) ( (((x)-1+max_snake_length)%max_snake_length)==0 ? max_snake_length : (((x)-1+max_snake_length)%max_snake_length) )
 #define add1_mod(x) ( (((x)+1)%max_snake_length)==0 ? max_snake_length : ((x)+1)%max_snake_length )
+//判断是否直接反向导致死亡
 #define is_inverse(direction1,direction2) ( (((direction1)+half_direction_num)%direction_num==0 ? direction_num : ((direction1)+half_direction_num)%direction_num)==direction2 ? 1:0 )
 
 //用于棋盘数据结构
@@ -49,6 +56,7 @@ void printboard(int* board,pos* snake,int snake_length,int head,int tail,int app
 }
 
 int main(){
+    // 初始化IO库
     initscr();  // 初始化ncurses库
     cbreak();   // 立即捕获输入字符，不需要回车
     nodelay(stdscr, TRUE); // 设置getch为非阻塞模式
@@ -67,8 +75,19 @@ int main(){
     int apple_eaten;
     int snake_dead;
 
-    int dis[5][2] = {{0,0},{0,-1},{-1,0},{0,1},{1,0}};
-    int flag;
+    int dis[5][2];
+
+    dis[0][0] = 0;
+    dis[0][1] = 0;
+    dis[1][0] = 0;
+    dis[1][1] = -1;
+    dis[2][0] = -1;
+    dis[2][1] = 0;
+    dis[3][0] = 0;
+    dis[3][1] = 1;
+    dis[4][0] = 1;
+    dis[4][1] = 0;
+
     while(1){
         //归零初始化
         for(int i=1;i<=max_snake_length;i++){
@@ -99,12 +118,12 @@ int main(){
         board[trans(apple_x,apple_y)] = num_apple;
         board[trans(snake[head].x , snake[head].y)] = num_snake;
 
-        //初始状态打印
+        // 初始状态打印
         printboard(board,snake,snake_length,head,tail,apple_x,apple_y);
 
         while(1){
-            //PC输入
-            int ch = getch(); // 获取用户输入的字符
+            // PC输入
+            int ch = getch();
             if(ch != ERR){
                 switch (ch){
                     case 'a': move_direction = 1; break;  // 上
@@ -113,7 +132,6 @@ int main(){
                     case 's': move_direction = 4; break;  // 左
                 }
             }
-
             if(is_inverse(this_direction,move_direction)){
                 break;
             }else{
@@ -195,6 +213,9 @@ int main(){
 
             printboard(board,snake,snake_length,head,tail,apple_x,apple_y);
             usleep(400000); //sleep 1s
+            // for(int i=0;i<delay;i++){
+            //     i++;
+            // }
         }
     }
 };

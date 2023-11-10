@@ -10,8 +10,8 @@ typedef struct{
 
 #define snake_speed 1
 #define max_snake_length 30
-#define max_height 24
-#define max_width 32
+#define max_height 12
+#define max_width 16
 #define num_apple 2
 #define num_snake 1
 #define num_air 0
@@ -27,12 +27,12 @@ typedef struct{
 #define apple_init_y 3
 #define apple_move_x 7
 #define apple_move_y 8
+#define delay 1000
 
 #define move_direction (*(volatile int*)(0x000)) //直接将方向值映射到内存中的0x000位置
-#define v_sync_finished (*(volatile int*)(0x004)) //直接将场同步映射到内存中的0x004位置
-
-//board以0x008为起点 , board[1]-board[3072] , *(board[1])=0x00c , *(board[trans(x,y)])=0x008+((x-1)*32+y)*4
-#define board ((volatile unsigned int*)(0x008))
+#define v_sync_finished (*(volatile int*)(0x004))
+//board以0x008为起点 , board[1]-board[192] , *(board[1])=0x00c , *(board[trans(x,y)])=0x008+((x-1)*16+y)*4
+#define board ((volatile int*)(0x008))
 
 //用于蛇数据结构
 #define sub1_mod(x) ( (((x)-1+max_snake_length)%max_snake_length)==0 ? max_snake_length : (((x)-1+max_snake_length)%max_snake_length) )
@@ -62,7 +62,6 @@ int main(){
     // nodelay(stdscr, TRUE); // 设置getch为非阻塞模式
 
     // int move_direction;
-    int this_direction;
     // int* board = (int*)malloc(sizeof(int)*(board_num+1));
     pos snake[max_snake_length+1];
 
@@ -75,8 +74,19 @@ int main(){
     int apple_eaten;
     int snake_dead;
 
-    int dis[5][2] = {{0,0},{0,-1},{-1,0},{0,1},{1,0}};
-    int flag;
+    int dis[5][2];
+
+    dis[0][0] = 0;
+    dis[0][1] = 0;
+    dis[1][0] = 0;
+    dis[1][1] = -1;
+    dis[2][0] = -1;
+    dis[2][1] = 0;
+    dis[3][0] = 0;
+    dis[3][1] = 1;
+    dis[4][0] = 1;
+    dis[4][1] = 0;
+
     while(1){
         //归零初始化
         for(int i=1;i<=max_snake_length;i++){
@@ -91,7 +101,6 @@ int main(){
         snake_dead = 0;
 
         move_direction = stop;
-        this_direction = stop;
 
         //蛇初始化
         head = 1;
@@ -107,8 +116,8 @@ int main(){
         board[trans(apple_x,apple_y)] = num_apple;
         board[trans(snake[head].x , snake[head].y)] = num_snake;
 
-        //场同步未完成
         v_sync_finished = 0;
+
         //初始状态打印
         // printboard(board,snake,snake_length,head,tail,apple_x,apple_y);
 
@@ -123,13 +132,7 @@ int main(){
             //         case 's': move_direction = 4; break;  // 左
             //     }
             // }
-            if(is_inverse(this_direction,move_direction)){
-                break;
-            }else{
-                this_direction = move_direction;
-            }
-
-            if(v_sync_finished==1){
+            if(v_sync_finished == 1){
                 int newx = snake[head].x+dis[move_direction][0];
                 int newy = snake[head].y+dis[move_direction][1];
                 head = sub1_mod(head);
@@ -202,11 +205,8 @@ int main(){
                     board[trans(apple_x,apple_y)] = num_apple;
                     apple_eaten = 0;
                 }
-
-                //场同步待完成
                 v_sync_finished = 0;
             }
-
             // printboard(board,snake,snake_length,head,tail,apple_x,apple_y);
             // usleep(400000); //sleep 1s
         }
